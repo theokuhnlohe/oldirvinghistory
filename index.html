@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Historic Homes of Old Irving Park</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Source+Serif+4:wght@300;400&display=swap" rel="stylesheet"/>
+
+  <style>
+    /* =====================
+       CSS VARIABLES & RESET
+    ===================== */
+    :root {
+      --cream:    #f5f0e8;
+      --brown:    #3b2a1a;
+      --gold:     #b8963e;
+      --tan:      #d4c4a0;
+      --white:    #fdfaf4;
+      --shadow:   rgba(59, 42, 26, 0.15);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Source Serif 4', serif;
+      background-color: var(--cream);
+      color: var(--brown);
+      min-height: 100vh;
+    }
+
+    /* =====================
+       HEADER
+    ===================== */
+    header {
+      background-color: var(--brown);
+      color: var(--cream);
+      text-align: center;
+      padding: 2.5rem 1rem 2rem;
+      border-bottom: 4px solid var(--gold);
+      position: relative;
+    }
+
+    header::after {
+      content: '';
+      display: block;
+      width: 80px;
+      height: 2px;
+      background: var(--gold);
+      margin: 0.75rem auto 0;
+    }
+
+    header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.8rem, 4vw, 3rem);
+      letter-spacing: 0.02em;
+      line-height: 1.2;
+    }
+
+    header p {
+      margin-top: 0.6rem;
+      font-size: 1rem;
+      font-weight: 300;
+      color: var(--tan);
+      letter-spacing: 0.05em;
+    }
+
+    /* =====================
+       LAYOUT
+    ===================== */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    .intro {
+      text-align: center;
+      max-width: 680px;
+      margin: 0 auto 2rem;
+      font-size: 1.05rem;
+      line-height: 1.8;
+      color: #5a4030;
+    }
+
+    /* =====================
+       MAP
+    ===================== */
+    #map {
+      width: 100%;
+      height: 520px;
+      border-radius: 4px;
+      border: 2px solid var(--tan);
+      box-shadow: 0 4px 24px var(--shadow);
+    }
+
+    /* =====================
+       CUSTOM MARKER
+    ===================== */
+    .home-marker {
+      background: var(--brown);
+      border: 2px solid var(--gold);
+      border-radius: 50% 50% 50% 0;
+      width: 28px;
+      height: 28px;
+      transform: rotate(-45deg);
+      box-shadow: 0 2px 8px var(--shadow);
+      transition: transform 0.2s;
+    }
+
+    .home-marker:hover {
+      background: var(--gold);
+      transform: rotate(-45deg) scale(1.15);
+    }
+
+    /* =====================
+       POPUP STYLES
+    ===================== */
+    .leaflet-popup-content-wrapper {
+      border-radius: 4px;
+      border: 1px solid var(--tan);
+      box-shadow: 0 4px 20px var(--shadow);
+      padding: 0;
+      overflow: hidden;
+      max-width: 280px;
+    }
+
+    .leaflet-popup-content {
+      margin: 0;
+      width: 100% !important;
+    }
+
+    .popup-inner {
+      font-family: 'Source Serif 4', serif;
+      color: var(--brown);
+    }
+
+    .popup-inner img {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      display: block;
+      border-bottom: 2px solid var(--gold);
+    }
+
+    .popup-inner .popup-no-photo {
+      width: 100%;
+      height: 80px;
+      background: var(--tan);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      border-bottom: 2px solid var(--gold);
+    }
+
+    .popup-body {
+      padding: 0.9rem 1rem 1rem;
+    }
+
+    .popup-body h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.05rem;
+      margin-bottom: 0.2rem;
+    }
+
+    .popup-body .popup-address {
+      font-size: 0.78rem;
+      color: var(--gold);
+      letter-spacing: 0.04em;
+      margin-bottom: 0.6rem;
+      text-transform: uppercase;
+    }
+
+    .popup-body p {
+      font-size: 0.88rem;
+      line-height: 1.6;
+      color: #5a4030;
+    }
+
+    /* =====================
+       HOME CARDS (below map)
+    ===================== */
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.6rem;
+      text-align: center;
+      margin: 2.5rem 0 1.5rem;
+      position: relative;
+    }
+
+    .section-title::before,
+    .section-title::after {
+      content: '—';
+      color: var(--gold);
+      margin: 0 0.75rem;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .card {
+      background: var(--white);
+      border: 1px solid var(--tan);
+      border-radius: 4px;
+      overflow: hidden;
+      box-shadow: 0 2px 12px var(--shadow);
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px var(--shadow);
+    }
+
+    .card img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      display: block;
+      border-bottom: 2px solid var(--gold);
+    }
+
+    .card-no-photo {
+      width: 100%;
+      height: 120px;
+      background: var(--tan);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      border-bottom: 2px solid var(--gold);
+    }
+
+    .card-body {
+      padding: 1rem 1.1rem 1.2rem;
+    }
+
+    .card-body h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      margin-bottom: 0.15rem;
+    }
+
+    .card-body .card-address {
+      font-size: 0.78rem;
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.6rem;
+    }
+
+    .card-body p {
+      font-size: 0.88rem;
+      line-height: 1.65;
+      color: #5a4030;
+    }
+
+    /* =====================
+       FOOTER
+    ===================== */
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      margin-top: 3rem;
+      border-top: 1px solid var(--tan);
+      font-size: 0.82rem;
+      color: #8a7060;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Historic Homes of Old Irving Park</h1>
+  <p>Preserving the stories of Chicago's architectural heritage</p>
+</header>
+
+<div class="container">
+
+  <p class="intro">
+    Explore the landmark residences that define the character of our neighborhood.
+    Click any marker on the map — or a card below — to learn more about each home's history.
+  </p>
+
+  <!-- MAP -->
+  <div id="map"></div>
+
+  <!-- CARDS -->
+  <h2 class="section-title">Featured Homes</h2>
+  <div class="cards-grid" id="cards-grid"></div>
+
+</div>
+
+<footer>
+  &copy; 2025 Old Irving Park Historic Preservation Society &nbsp;·&nbsp; Built with Leaflet.js &amp; ❤️
+</footer>
+
+<!-- Leaflet JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
+<script>
+  /* ============================================================
+     HOME DATA
+     ✏️  Edit this array to add, remove, or update homes.
+     
+     Each entry has:
+       name        — the home's name or family name
+       address     — street address (shown in popup & card)
+       lat / lng   — GPS coordinates (find via Google Maps:
+                     right-click a location → "What's here?")
+       description — brief historical description
+       photo       — URL to a photo, OR null for a placeholder
+  ============================================================ */
+  const homes = [
+    {
+      name: "The Graeme House",
+      address: "3954 N. Kedvale Avenue",
+      lat: 41.9530,
+      lng: -87.7320,
+      description: "A distinguished example of Prairie-influenced architecture from the early 1900s. The broad overhanging eaves and horizontal emphasis reflect the influence of the Chicago School that defined the era.",
+      photo: null
+    },
+    {
+      name: "The Olsen Residence",
+      address: "4112 N. Hamlin Avenue",
+      lat: 41.9545,
+      lng: -87.7198,
+      description: "This Foursquare home, built around 1908, was typical of the period when Old Irving Park was developing as a prosperous streetcar suburb. Original woodwork and leaded glass windows are intact.",
+      photo: null
+    },
+    {
+      name: "The Brennan House",
+      address: "3820 N. Tripp Avenue",
+      lat: 41.9518,
+      lng: -87.7360,
+      description: "A well-preserved Queen Anne cottage dating to the 1890s, featuring decorative spindle work and a steeply pitched roof. One of the earliest surviving residences in the neighborhood.",
+      photo: null
+    },
+    {
+      name: "The Sandburg Manor",
+      address: "4025 W. Berenice Avenue",
+      lat: 41.9558,
+      lng: -87.7275,
+      description: "Built in 1912, this Colonial Revival home reflects the prosperous character of Old Irving Park in the early 20th century. The two-story columned porch is a defining feature of the streetscape.",
+      photo: null
+    }
+  ];
+
+  /* ============================================================
+     MAP SETUP
+     ✏️  Change the lat/lng below to center the map on your
+         neighborhood. You can also adjust the zoom level (1–18).
+  ============================================================ */
+  const map = L.map('map').setView([41.9535, -87.7280], 15);
+
+  // Map tile layer (OpenStreetMap — free, no API key needed)
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 19
+  }).addTo(map);
+
+  /* ============================================================
+     CUSTOM MARKER ICON
+  ============================================================ */
+  const houseIcon = L.divIcon({
+    className: '',
+    html: '<div class="home-marker"></div>',
+    iconSize: [28, 28],
+    iconAnchor: [8, 28],
+    popupAnchor: [6, -30]
+  });
+
+  /* ============================================================
+     BUILD MARKERS & CARDS
+  ============================================================ */
+  const markers = [];
+  const grid = document.getElementById('cards-grid');
+
+  homes.forEach((home, i) => {
+    // --- POPUP CONTENT ---
+    const photoHtml = home.photo
+      ? `<img src="${home.photo}" alt="${home.name}"/>`
+      : `<div class="popup-no-photo">🏠</div>`;
+
+    const popupHtml = `
+      <div class="popup-inner">
+        ${photoHtml}
+        <div class="popup-body">
+          <h3>${home.name}</h3>
+          <div class="popup-address">${home.address}</div>
+          <p>${home.description}</p>
+        </div>
+      </div>`;
+
+    // --- ADD MARKER ---
+    const marker = L.marker([home.lat, home.lng], { icon: houseIcon })
+      .addTo(map)
+      .bindPopup(popupHtml, { maxWidth: 280 });
+
+    markers.push(marker);
+
+    // --- BUILD CARD ---
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      ${home.photo
+        ? `<img src="${home.photo}" alt="${home.name}"/>`
+        : `<div class="card-no-photo">🏠</div>`
+      }
+      <div class="card-body">
+        <h3>${home.name}</h3>
+        <div class="card-address">${home.address}</div>
+        <p>${home.description}</p>
+      </div>`;
+
+    // Clicking a card opens its map marker popup
+    card.addEventListener('click', () => {
+      map.setView([home.lat, home.lng], 17, { animate: true });
+      markers[i].openPopup();
+      document.getElementById('map').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+
+    grid.appendChild(card);
+  });
+</script>
+
+</body>
+</html>
